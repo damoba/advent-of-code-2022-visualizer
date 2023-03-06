@@ -2,8 +2,9 @@ import {
   Accessor,
   Component,
   createEffect,
-  createResource,
   createSignal,
+  onCleanup,
+  onMount,
   Setter,
 } from "solid-js";
 import inputFile from "../inputs/day-09.txt";
@@ -18,9 +19,25 @@ const MOVE_LEFT = "L";
 const MOVE_UP = "U";
 const MOVE_DOWN = "D";
 
-const fetchInputText = async (file: string) => {
-  const response = await fetch(file);
-  return await response.text();
+const initializeLoop = (
+  setHeadPos: Setter<Knot>,
+  maxLen: number,
+  tailPos: Accessor<Knot>,
+  setTailPos: Setter<Knot>,
+  visitedPos: { val: Set<string> }
+) => {
+  setHeadPos({
+    r: maxLen,
+    c: maxLen,
+    str: [maxLen, maxLen].toString(),
+  });
+  setTailPos({
+    r: maxLen,
+    c: maxLen,
+    str: [maxLen, maxLen].toString(),
+  });
+  visitedPos.val = new Set<string>();
+  visitedPos.val.add(tailPos().str);
 };
 
 const calcMaxLen = (lines: string[]) => {
@@ -44,7 +61,7 @@ const parseMotion = (motion: string) => {
 };
 
 const move = (
-  visitedPos: Set<string>,
+  visitedPos: { val: Set<string> },
   headPos: Accessor<Knot>,
   setHeadPos: Setter<Knot>,
   tailPos: Accessor<Knot>,
@@ -62,7 +79,7 @@ const move = (
           (tailPos().r > headPos().r && tailPos().c < headPos().c)
         ) {
           setTailPos({ ...headPos() });
-          visitedPos.add(tailPos().str);
+          visitedPos.val.add(tailPos().str);
         }
         setHeadPos({
           ...headPos(),
@@ -79,7 +96,7 @@ const move = (
           (tailPos().r > headPos().r && tailPos().c > headPos().c)
         ) {
           setTailPos({ ...headPos() });
-          visitedPos.add(tailPos().str);
+          visitedPos.val.add(tailPos().str);
         }
         setHeadPos({
           ...headPos(),
@@ -96,7 +113,7 @@ const move = (
           (tailPos().r > headPos().r && tailPos().c > headPos().c)
         ) {
           setTailPos({ ...headPos() });
-          visitedPos.add(tailPos().str);
+          visitedPos.val.add(tailPos().str);
         }
         setHeadPos({
           ...headPos(),
@@ -113,7 +130,7 @@ const move = (
           (tailPos().r < headPos().r && tailPos().c > headPos().c)
         ) {
           setTailPos({ ...headPos() });
-          visitedPos.add(tailPos().str);
+          visitedPos.val.add(tailPos().str);
         }
         setHeadPos({
           ...headPos(),
@@ -129,34 +146,46 @@ const move = (
 };
 
 const Day09: Component = () => {
-  const [inputText] = createResource(inputFile, fetchInputText);
+  let motions = [];
+  let motionsCache = [];
+  let maxLen = 0;
+
   const [headPos, setHeadPos] = createSignal<Knot>();
   const [tailPos, setTailPos] = createSignal<Knot>();
-  const [loop, setLoop] = createSignal<string>(START);
+  let visitedPos = { val: new Set<string>() };
+
+  const [loop, setLoop] = createSignal<boolean>(false);
+
+  onMount(async () => {
+    const response = await fetch(inputFile);
+    const inputText = await response.text();
+    motions = inputText.split("\n");
+    motionsCache = [...motions];
+    maxLen = calcMaxLen(motions);
+    initializeLoop(setHeadPos, maxLen, tailPos, setTailPos, visitedPos);
+  });
 
   createEffect(() => {
-    if (inputText() && loop() == STOP) {
-      const motions = inputText().split("\n");
-      const maxLen = calcMaxLen(motions);
-      setHeadPos({
-        r: maxLen,
-        c: maxLen,
-        str: [maxLen, maxLen].toString(),
-      });
-      setTailPos({
-        r: maxLen,
-        c: maxLen,
-        str: [maxLen, maxLen].toString(),
-      });
-      const visitedPos = new Set<string>();
-      visitedPos.add(tailPos().str);
-
-      motions.forEach((motion) => {
-        move(visitedPos, headPos, setHeadPos, tailPos, setTailPos, motion);
-      });
-      console.log(visitedPos.size);
-      setLoop(START);
+    let intervalId: number;
+    if (loop() && motions) {
+      intervalId = setInterval(() => {
+        if (motions.length > 0) {
+          move(
+            visitedPos,
+            headPos,
+            setHeadPos,
+            tailPos,
+            setTailPos,
+            motions.shift()
+          );
+          console.log(visitedPos.val.size);
+        } else {
+          initializeLoop(setHeadPos, maxLen, tailPos, setTailPos, visitedPos);
+          motions = [...motionsCache];
+        }
+      }, 5);
     }
+    onCleanup(() => clearInterval(intervalId));
   });
 
   return (
@@ -168,9 +197,9 @@ const Day09: Component = () => {
         <h2 class="font-bold">Part One</h2>
         <button
           class="rounded bg-gray-300 py-2 px-4 font-bold text-gray-800 hover:bg-gray-400"
-          onClick={() => (loop() == START ? setLoop(STOP) : setLoop(START))}
+          onClick={() => setLoop(!loop())}
         >
-          {loop()}
+          {loop() ? STOP : START}
         </button>
       </div>
       <div class="flex h-80 w-80 flex-col items-center justify-center bg-gray-900 p-6 text-center text-[0.45rem] leading-3 sm:h-[32rem] sm:w-[32rem] sm:text-[0.70rem] md:h-[42rem] md:w-[42rem] md:text-sm lg:h-[48rem] lg:w-[48rem] lg:text-base">
