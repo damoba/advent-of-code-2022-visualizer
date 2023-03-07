@@ -18,7 +18,7 @@ const START_C = 11;
 const RIGHT_C = 25;
 
 const START = "START";
-const PAUSE = "PAUSE";
+const PAUSE = "PAUSE ON NEXT INSTRUCTION";
 
 const INTERVAL_TIME = 2000;
 
@@ -75,7 +75,7 @@ const move = (
   if (dir === MOVE_RIGHT) {
     let i = 0;
     let intervalId = setInterval(() => {
-      if (loop() && i++ < dist) {
+      if (i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r === headPos().r && tailPos().c < headPos().c) ||
@@ -89,14 +89,14 @@ const move = (
           c: headPos().c + 1,
           str: [headPos().r, headPos().c + 1].toString(),
         });
-      } else if (loop()) {
+      } else {
         window.clearInterval(intervalId);
       }
     }, INTERVAL_TIME / dist);
   } else if (dir === MOVE_LEFT) {
     let i = 0;
     let intervalId = setInterval(() => {
-      if (loop() && i++ < dist) {
+      if (i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c > headPos().c) ||
           (tailPos().r === headPos().r && tailPos().c > headPos().c) ||
@@ -110,14 +110,14 @@ const move = (
           c: headPos().c - 1,
           str: [headPos().r, headPos().c - 1].toString(),
         });
-      } else if (loop()) {
+      } else {
         window.clearInterval(intervalId);
       }
     }, INTERVAL_TIME / dist);
   } else if (dir === MOVE_UP) {
     let i = 0;
     let intervalId = setInterval(() => {
-      if (loop() && i++ < dist) {
+      if (i++ < dist) {
         if (
           (tailPos().r > headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r > headPos().r && tailPos().c === headPos().c) ||
@@ -131,14 +131,14 @@ const move = (
           r: headPos().r - 1,
           str: [headPos().r - 1, headPos().c].toString(),
         });
-      } else if (loop()) {
+      } else {
         window.clearInterval(intervalId);
       }
     }, INTERVAL_TIME / dist);
   } else if (dir === MOVE_DOWN) {
     let i = 0;
     let intervalId = setInterval(() => {
-      if (loop() && i++ < dist) {
+      if (i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r < headPos().r && tailPos().c === headPos().c) ||
@@ -152,7 +152,7 @@ const move = (
           r: headPos().r + 1,
           str: [headPos().r + 1, headPos().c].toString(),
         });
-      } else if (loop()) {
+      } else {
         window.clearInterval(intervalId);
       }
     }, INTERVAL_TIME / dist);
@@ -183,15 +183,17 @@ const Day09: Component = () => {
   createEffect(() => {
     let intervalId: number;
     if (loop() && motions) {
-      move(
-        loop,
-        visitedPos,
-        headPos,
-        setHeadPos,
-        tailPos,
-        setTailPos,
-        motions.shift()
-      );
+      if (motions.length > 0) {
+        move(
+          loop,
+          visitedPos,
+          headPos,
+          setHeadPos,
+          tailPos,
+          setTailPos,
+          motions.shift()
+        );
+      }
       intervalId = setInterval(() => {
         if (motions.length > 0) {
           move(
