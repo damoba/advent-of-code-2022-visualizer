@@ -3,16 +3,28 @@ import {
   Component,
   createEffect,
   createSignal,
+  For,
   onCleanup,
   onMount,
   Setter,
 } from "solid-js";
 import inputFile from "../inputs/day-09.txt";
 
-const START = "START";
-const STOP = "STOP";
-
 type Knot = { r: number; c: number; str: string };
+
+const START_R = 15;
+const RIGHT_R = 20;
+const START_C = 11;
+const RIGHT_C = 25;
+
+const START = "START";
+const PAUSE = "PAUSE";
+
+const INTERVAL_TIME = 2000;
+
+const EMPTY = ".";
+const HEAD = "H";
+const TAIL = "T";
 
 const MOVE_RIGHT = "R";
 const MOVE_LEFT = "L";
@@ -21,33 +33,22 @@ const MOVE_DOWN = "D";
 
 const initializeLoop = (
   setHeadPos: Setter<Knot>,
-  maxLen: number,
   tailPos: Accessor<Knot>,
   setTailPos: Setter<Knot>,
   visitedPos: { val: Set<string> }
 ) => {
   setHeadPos({
-    r: maxLen,
-    c: maxLen,
-    str: [maxLen, maxLen].toString(),
+    r: START_R,
+    c: START_C,
+    str: [START_R, START_C].toString(),
   });
   setTailPos({
-    r: maxLen,
-    c: maxLen,
-    str: [maxLen, maxLen].toString(),
+    r: START_R,
+    c: START_C,
+    str: [START_R, START_C].toString(),
   });
   visitedPos.val = new Set<string>();
   visitedPos.val.add(tailPos().str);
-};
-
-const calcMaxLen = (lines: string[]) => {
-  return lines.reduce((acc, line) => {
-    let max = acc;
-    if (line !== "") {
-      max = Math.max(acc, parseInt(line.split(" ")[1], 10));
-    }
-    return max;
-  }, 0);
 };
 
 const parseMotion = (motion: string) => {
@@ -61,6 +62,7 @@ const parseMotion = (motion: string) => {
 };
 
 const move = (
+  loop: Accessor<boolean>,
   visitedPos: { val: Set<string> },
   headPos: Accessor<Knot>,
   setHeadPos: Setter<Knot>,
@@ -70,9 +72,10 @@ const move = (
 ) => {
   const [dir, dist]: [string, number] = parseMotion(motion) as [string, number];
 
-  switch (dir) {
-    case MOVE_RIGHT:
-      for (let i = 0; i < dist; i++) {
+  if (dir === MOVE_RIGHT) {
+    let i = 0;
+    let intervalId = setInterval(() => {
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r === headPos().r && tailPos().c < headPos().c) ||
@@ -86,10 +89,14 @@ const move = (
           c: headPos().c + 1,
           str: [headPos().r, headPos().c + 1].toString(),
         });
+      } else if (loop()) {
+        window.clearInterval(intervalId);
       }
-      break;
-    case MOVE_LEFT:
-      for (let i = 0; i < dist; i++) {
+    }, INTERVAL_TIME / dist);
+  } else if (dir === MOVE_LEFT) {
+    let i = 0;
+    let intervalId = setInterval(() => {
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c > headPos().c) ||
           (tailPos().r === headPos().r && tailPos().c > headPos().c) ||
@@ -103,10 +110,14 @@ const move = (
           c: headPos().c - 1,
           str: [headPos().r, headPos().c - 1].toString(),
         });
+      } else if (loop()) {
+        window.clearInterval(intervalId);
       }
-      break;
-    case MOVE_UP:
-      for (let i = 0; i < dist; i++) {
+    }, INTERVAL_TIME / dist);
+  } else if (dir === MOVE_UP) {
+    let i = 0;
+    let intervalId = setInterval(() => {
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r > headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r > headPos().r && tailPos().c === headPos().c) ||
@@ -120,10 +131,14 @@ const move = (
           r: headPos().r - 1,
           str: [headPos().r - 1, headPos().c].toString(),
         });
+      } else if (loop()) {
+        window.clearInterval(intervalId);
       }
-      break;
-    case MOVE_DOWN:
-      for (let i = 0; i < dist; i++) {
+    }, INTERVAL_TIME / dist);
+  } else if (dir === MOVE_DOWN) {
+    let i = 0;
+    let intervalId = setInterval(() => {
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r < headPos().r && tailPos().c === headPos().c) ||
@@ -137,19 +152,20 @@ const move = (
           r: headPos().r + 1,
           str: [headPos().r + 1, headPos().c].toString(),
         });
+      } else if (loop()) {
+        window.clearInterval(intervalId);
       }
-      break;
-    default: {
-      break;
-    }
+    }, INTERVAL_TIME / dist);
   }
 };
 
 const Day09: Component = () => {
   let motions = [];
   let motionsCache = [];
-  let maxLen = 0;
 
+  const world = new Array(RIGHT_R + 1)
+    .fill(0)
+    .map(() => new Array(RIGHT_C + 1).fill(EMPTY));
   const [headPos, setHeadPos] = createSignal<Knot>();
   const [tailPos, setTailPos] = createSignal<Knot>();
   let visitedPos = { val: new Set<string>() };
@@ -161,16 +177,25 @@ const Day09: Component = () => {
     const inputText = await response.text();
     motions = inputText.split("\n");
     motionsCache = [...motions];
-    maxLen = calcMaxLen(motions);
-    initializeLoop(setHeadPos, maxLen, tailPos, setTailPos, visitedPos);
+    initializeLoop(setHeadPos, tailPos, setTailPos, visitedPos);
   });
 
   createEffect(() => {
     let intervalId: number;
     if (loop() && motions) {
+      move(
+        loop,
+        visitedPos,
+        headPos,
+        setHeadPos,
+        tailPos,
+        setTailPos,
+        motions.shift()
+      );
       intervalId = setInterval(() => {
         if (motions.length > 0) {
           move(
+            loop,
             visitedPos,
             headPos,
             setHeadPos,
@@ -178,12 +203,11 @@ const Day09: Component = () => {
             setTailPos,
             motions.shift()
           );
-          console.log(visitedPos.val.size);
         } else {
-          initializeLoop(setHeadPos, maxLen, tailPos, setTailPos, visitedPos);
+          initializeLoop(setHeadPos, tailPos, setTailPos, visitedPos);
           motions = [...motionsCache];
         }
-      }, 5);
+      }, INTERVAL_TIME);
     }
     onCleanup(() => clearInterval(intervalId));
   });
@@ -194,16 +218,36 @@ const Day09: Component = () => {
         Day 9: Rope Bridge
       </h1>
       <div class="flex items-center justify-center gap-6">
-        <h2 class="font-bold">Part One</h2>
+        <h2 class="font-bold">Part Two</h2>
         <button
           class="rounded bg-gray-300 py-2 px-4 font-bold text-gray-800 hover:bg-gray-400"
           onClick={() => setLoop(!loop())}
         >
-          {loop() ? STOP : START}
+          {loop() ? PAUSE : START}
         </button>
       </div>
-      <div class="flex h-80 w-80 flex-col items-center justify-center bg-gray-900 p-6 text-center text-[0.45rem] leading-3 sm:h-[32rem] sm:w-[32rem] sm:text-[0.70rem] md:h-[42rem] md:w-[42rem] md:text-sm lg:h-[48rem] lg:w-[48rem] lg:text-base">
-        <p class="mt-2 sm:mt-4 md:mt-6 lg:mt-8">To be implemented...</p>
+      <div class="flex w-fit items-center justify-center bg-gray-900 p-10 text-base leading-3 sm:text-base md:text-2xl lg:text-3xl">
+        <div class="w-fit">
+          <For each={world}>
+            {(row, r) => (
+              <div class="flex">
+                <For each={row}>
+                  {(_, c) => (
+                    <div class="w-fit">
+                      {headPos() && headPos().r === r() && headPos().c === c()
+                        ? HEAD
+                        : tailPos() &&
+                          tailPos().r === r() &&
+                          tailPos().c === c()
+                        ? TAIL
+                        : EMPTY}
+                    </div>
+                  )}
+                </For>
+              </div>
+            )}
+          </For>
+        </div>
       </div>
       <a
         target="_blank"
