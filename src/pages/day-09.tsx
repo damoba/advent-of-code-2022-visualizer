@@ -1,3 +1,4 @@
+import { useLocation } from "@solidjs/router";
 import {
   Accessor,
   Component,
@@ -18,7 +19,7 @@ const START_C = 11;
 const RIGHT_C = 25;
 
 const START = "START";
-const PAUSE = "PAUSE ON NEXT INSTRUCTION";
+const PAUSE = "PAUSE";
 
 const INTERVAL_TIME = 2000;
 
@@ -62,7 +63,13 @@ const parseMotion = (motion: string) => {
 };
 
 const move = (
+  location: Location,
   loop: Accessor<boolean>,
+  setMoveIsDone: Setter<boolean>,
+  intervalIdRight: number,
+  intervalIdLeft: number,
+  intervalIdUp: number,
+  intervalIdDown: number,
   visitedPos: { val: Set<string> },
   headPos: Accessor<Knot>,
   setHeadPos: Setter<Knot>,
@@ -74,8 +81,12 @@ const move = (
 
   if (dir === MOVE_RIGHT) {
     let i = 0;
-    let intervalId = setInterval(() => {
-      if (i++ < dist) {
+    intervalIdRight = setInterval(() => {
+      if (location.pathname !== "/day/09") {
+        window.clearInterval(intervalIdRight);
+      }
+      setMoveIsDone(false);
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r === headPos().r && tailPos().c < headPos().c) ||
@@ -89,14 +100,19 @@ const move = (
           c: headPos().c + 1,
           str: [headPos().r, headPos().c + 1].toString(),
         });
-      } else {
-        window.clearInterval(intervalId);
+      } else if (loop()) {
+        setMoveIsDone(true);
+        window.clearInterval(intervalIdRight);
       }
     }, INTERVAL_TIME / dist);
   } else if (dir === MOVE_LEFT) {
     let i = 0;
-    let intervalId = setInterval(() => {
-      if (i++ < dist) {
+    intervalIdLeft = setInterval(() => {
+      if (location.pathname !== "/day/09") {
+        window.clearInterval(intervalIdLeft);
+      }
+      setMoveIsDone(false);
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c > headPos().c) ||
           (tailPos().r === headPos().r && tailPos().c > headPos().c) ||
@@ -110,14 +126,19 @@ const move = (
           c: headPos().c - 1,
           str: [headPos().r, headPos().c - 1].toString(),
         });
-      } else {
-        window.clearInterval(intervalId);
+      } else if (loop()) {
+        setMoveIsDone(true);
+        window.clearInterval(intervalIdLeft);
       }
     }, INTERVAL_TIME / dist);
   } else if (dir === MOVE_UP) {
     let i = 0;
-    let intervalId = setInterval(() => {
-      if (i++ < dist) {
+    intervalIdUp = setInterval(() => {
+      if (location.pathname !== "/day/09") {
+        window.clearInterval(intervalIdUp);
+      }
+      setMoveIsDone(false);
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r > headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r > headPos().r && tailPos().c === headPos().c) ||
@@ -131,14 +152,19 @@ const move = (
           r: headPos().r - 1,
           str: [headPos().r - 1, headPos().c].toString(),
         });
-      } else {
-        window.clearInterval(intervalId);
+      } else if (loop()) {
+        setMoveIsDone(true);
+        window.clearInterval(intervalIdUp);
       }
     }, INTERVAL_TIME / dist);
   } else if (dir === MOVE_DOWN) {
     let i = 0;
-    let intervalId = setInterval(() => {
-      if (i++ < dist) {
+    intervalIdDown = setInterval(() => {
+      if (location.pathname !== "/day/09") {
+        window.clearInterval(intervalIdDown);
+      }
+      setMoveIsDone(false);
+      if (loop() && i++ < dist) {
         if (
           (tailPos().r < headPos().r && tailPos().c < headPos().c) ||
           (tailPos().r < headPos().r && tailPos().c === headPos().c) ||
@@ -152,14 +178,17 @@ const move = (
           r: headPos().r + 1,
           str: [headPos().r + 1, headPos().c].toString(),
         });
-      } else {
-        window.clearInterval(intervalId);
+      } else if (loop()) {
+        setMoveIsDone(true);
+        window.clearInterval(intervalIdDown);
       }
     }, INTERVAL_TIME / dist);
   }
 };
 
 const Day09: Component = () => {
+  const location = useLocation() as unknown as Location;
+
   let motions = [];
   let motionsCache = [];
 
@@ -171,6 +200,12 @@ const Day09: Component = () => {
   let visitedPos = { val: new Set<string>() };
 
   const [loop, setLoop] = createSignal<boolean>(false);
+  const [moveIsDone, setMoveIsDone] = createSignal<boolean>(true);
+  let intervalId: number;
+  let intervalIdRight: number;
+  let intervalIdLeft: number;
+  let intervalIdUp: number;
+  let intervalIdDown: number;
 
   onMount(async () => {
     const response = await fetch(inputFile);
@@ -181,11 +216,16 @@ const Day09: Component = () => {
   });
 
   createEffect(() => {
-    let intervalId: number;
-    if (loop() && motions) {
+    if (motions && moveIsDone() && loop()) {
       if (motions.length > 0) {
         move(
+          location,
           loop,
+          setMoveIsDone,
+          intervalIdRight,
+          intervalIdLeft,
+          intervalIdUp,
+          intervalIdDown,
           visitedPos,
           headPos,
           setHeadPos,
@@ -195,9 +235,18 @@ const Day09: Component = () => {
         );
       }
       intervalId = setInterval(() => {
+        if (location.pathname !== "/day/09") {
+          window.clearInterval(intervalId);
+        }
         if (motions.length > 0) {
           move(
+            location,
             loop,
+            setMoveIsDone,
+            intervalIdRight,
+            intervalIdLeft,
+            intervalIdUp,
+            intervalIdDown,
             visitedPos,
             headPos,
             setHeadPos,
@@ -211,7 +260,14 @@ const Day09: Component = () => {
         }
       }, INTERVAL_TIME);
     }
-    onCleanup(() => clearInterval(intervalId));
+
+    onCleanup(() => {
+      clearInterval(intervalId);
+      clearInterval(intervalIdRight);
+      clearInterval(intervalIdLeft);
+      clearInterval(intervalIdUp);
+      clearInterval(intervalIdDown);
+    });
   });
 
   return (
