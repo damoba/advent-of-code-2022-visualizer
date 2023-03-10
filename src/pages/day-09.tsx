@@ -143,13 +143,31 @@ const move = (
   }, INTERVAL_TIME / dist);
 };
 
+const checkKnotIsInRopeSpot = (
+  knotsArr: Accessor<Knot[]>,
+  ropeR: () => number,
+  ropeC: () => number
+) => {
+  return knotsArr()
+    .slice(1)
+    .reduce(
+      (acc, pos, i) =>
+        acc[0] === true
+          ? acc
+          : ropeR() === pos.r && ropeC() === pos.c
+          ? [true, i]
+          : [false, null],
+      [false, null]
+    );
+};
+
 const Day09: Component = () => {
   const location = useLocation() as unknown as Location;
 
   let motions = [];
   let motionsCache = [];
 
-  const world = new Array(RIGHT_R + 1)
+  const rope = new Array(RIGHT_R + 1)
     .fill(0)
     .map(() => new Array(RIGHT_C + 1).fill(EMPTY));
   const [knotsPos, setKnotsPos] = createSignal<Knot[]>();
@@ -231,7 +249,7 @@ const Day09: Component = () => {
       </div>
       <div class="flex w-fit items-center justify-center bg-gray-900 p-10 text-base leading-3 sm:text-base md:text-2xl lg:text-3xl">
         <div class="w-fit">
-          <For each={world}>
+          <For each={rope}>
             {(row, r) => (
               <div class="flex">
                 <For each={row}>
@@ -241,24 +259,12 @@ const Day09: Component = () => {
                         visitedPos() &&
                         (knotsPos()[0].r === r() && knotsPos()[0].c === c()
                           ? HEAD
-                          : knotsPos()[1].r === r() && knotsPos()[1].c === c()
-                          ? 1
-                          : knotsPos()[2].r === r() && knotsPos()[2].c === c()
-                          ? 2
-                          : knotsPos()[3].r === r() && knotsPos()[3].c === c()
-                          ? 3
-                          : knotsPos()[4].r === r() && knotsPos()[4].c === c()
-                          ? 4
-                          : knotsPos()[5].r === r() && knotsPos()[5].c === c()
-                          ? 5
-                          : knotsPos()[6].r === r() && knotsPos()[6].c === c()
-                          ? 6
-                          : knotsPos()[7].r === r() && knotsPos()[7].c === c()
-                          ? 7
-                          : knotsPos()[8].r === r() && knotsPos()[8].c === c()
-                          ? 8
-                          : knotsPos()[9].r === r() && knotsPos()[9].c === c()
-                          ? 9
+                          : checkKnotIsInRopeSpot(knotsPos, r, c)[0] === true
+                          ? (checkKnotIsInRopeSpot(
+                              knotsPos,
+                              r,
+                              c
+                            )[1] as number) + 1
                           : visitedPos().has([r(), c()].toString())
                           ? VISITED
                           : EMPTY)}
