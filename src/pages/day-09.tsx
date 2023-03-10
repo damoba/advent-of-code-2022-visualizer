@@ -72,6 +72,7 @@ const move = (
   motion: string
 ) => {
   const [dir, dist]: [string, number] = parseMotion(motion) as [string, number];
+
   let i = 0;
   moveIntervalId = setInterval(() => {
     if (location.pathname !== "/day/09") {
@@ -129,13 +130,12 @@ const move = (
           );
           j++;
         } else {
+          const newVisitedPos = new Set<string>(visitedPos());
+          newVisitedPos.add(knotsPos()[KNOT_COUNT - 1].str);
+          setVisitedPos(newVisitedPos);
           window.clearInterval(tailsIntervalId);
         }
       }, 0);
-
-      const newVisitedPos = new Set<string>(visitedPos());
-      newVisitedPos.add(knotsPos()[KNOT_COUNT - 1].str);
-      setVisitedPos(newVisitedPos);
     } else if (loop()) {
       setMoveIsDone(true);
       window.clearInterval(moveIntervalId);
