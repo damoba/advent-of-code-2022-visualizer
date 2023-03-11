@@ -246,7 +246,7 @@ const Day09: Component = () => {
           {loop() ? PAUSE : START}
         </button>
       </div>
-      <div class="flex w-fit items-center justify-center bg-gray-900 p-10 text-base leading-3 sm:text-base md:text-2xl lg:text-3xl">
+      <div class="flex w-fit items-center justify-center bg-gray-900 p-10 text-base md:text-2xl lg:text-3xl">
         <div class="w-fit">
           <For each={rope}>
             {(row, r) => (
