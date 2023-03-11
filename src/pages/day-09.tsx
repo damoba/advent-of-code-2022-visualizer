@@ -164,8 +164,8 @@ const checkKnotIsInRopeSpot = (
 const Day09: Component = () => {
   const location = useLocation() as unknown as Location;
 
-  let motions = [];
-  let motionsCache = [];
+  let motions: string[];
+  let motionsIdx = 0;
 
   const rope = new Array(RIGHT_R + 1)
     .fill(0)
@@ -183,13 +183,12 @@ const Day09: Component = () => {
     const response = await fetch(inputFile);
     const inputText = await response.text();
     motions = inputText.split("\n");
-    motionsCache = [...motions];
     initializeLoop(knotsPos, setKnotsPos, setVisitedPos);
   });
 
   createEffect(() => {
-    if (motions && moveIsDone() && loop()) {
-      if (motions.length > 0) {
+    if (moveIsDone() && loop()) {
+      if (motionsIdx < motions.length) {
         move(
           location,
           loop,
@@ -200,14 +199,14 @@ const Day09: Component = () => {
           setVisitedPos,
           knotsPos,
           setKnotsPos,
-          motions.shift()
+          motions[motionsIdx++]
         );
       }
       intervalId = setInterval(() => {
         if (location.pathname !== "/day/09") {
           window.clearInterval(intervalId);
         }
-        if (motions.length > 0) {
+        if (motionsIdx < motions.length) {
           move(
             location,
             loop,
@@ -218,11 +217,11 @@ const Day09: Component = () => {
             setVisitedPos,
             knotsPos,
             setKnotsPos,
-            motions.shift()
+            motions[motionsIdx++]
           );
         } else {
           initializeLoop(knotsPos, setKnotsPos, setVisitedPos);
-          motions = [...motionsCache];
+          motionsIdx = 0;
         }
       }, INTERVAL_TIME);
     }
