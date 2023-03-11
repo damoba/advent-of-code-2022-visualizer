@@ -229,6 +229,7 @@ const Day09: Component = () => {
     onCleanup(() => {
       clearInterval(intervalId);
       clearInterval(moveIntervalId);
+      clearInterval(tailsIntervalId);
     });
   });
 
