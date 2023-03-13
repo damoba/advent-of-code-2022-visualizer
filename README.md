@@ -10,7 +10,7 @@ Visualizations for the following problems: https://adventofcode.com/2022
 
 ### Day 9: Rope Bridge
 
-https://user-images.githubusercontent.com/71296308/224468128-3117deef-ecb1-49bd-86c2-20db125cefeb.mp4
+https://user-images.githubusercontent.com/71296308/224616106-3663f24b-781b-4611-9740-29a4179b89b8.mp4
 
 ## Acknowledgments
 
