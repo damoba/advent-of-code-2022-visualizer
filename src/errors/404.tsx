@@ -1,5 +1,6 @@
 import { Component } from "solid-js";
 import ASCII404 from "../components/ASCII404";
+import githubIcon from "../assets/github-icon.svg";
 
 const NotFound: Component = () => (
   <main class="flex flex-auto flex-col items-center justify-center gap-10 rounded border-4 border-green-300 p-6 text-sm md:text-base lg:gap-6 lg:text-lg">
@@ -13,7 +14,7 @@ const NotFound: Component = () => (
       class="group"
     >
       <img
-        src="/src/assets/github-icon.svg"
+        src={githubIcon}
         alt="GitHub"
         class="transition-transform duration-300 ease-in-out group-hover:-translate-y-1 group-hover:brightness-[1.2] group-hover:contrast-[1.01] group-hover:hue-rotate-[271deg] group-hover:invert group-hover:saturate-0 group-hover:sepia motion-reduce:transition-none motion-reduce:group-hover:transform-none"
       />

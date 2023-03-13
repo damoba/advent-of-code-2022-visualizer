@@ -10,6 +10,7 @@ import {
   Setter,
 } from "solid-js";
 import inputFile from "../inputs/day-09.txt";
+import githubIcon from "../assets/github-icon.svg";
 
 type Knot = { r: number; c: number; str: string };
 
@@ -270,7 +271,7 @@ const Day09: Component = () => {
         class="group"
       >
         <img
-          src="/src/assets/github-icon.svg"
+          src={githubIcon}
           alt="GitHub"
           class="transition-transform duration-300 ease-in-out group-hover:-translate-y-1 group-hover:brightness-[1.2] group-hover:contrast-[1.01] group-hover:hue-rotate-[271deg] group-hover:invert group-hover:saturate-0 group-hover:sepia motion-reduce:transition-none motion-reduce:group-hover:transform-none"
         />
