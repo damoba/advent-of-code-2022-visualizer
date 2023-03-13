@@ -16,12 +16,9 @@ type Knot = { r: number; c: number; str: string };
 const KNOT_COUNT = 10;
 
 const START_R = 15;
-const RIGHT_R = 20;
+const LENGTH_R = 21;
 const START_C = 11;
-const RIGHT_C = 25;
-
-const START = "START";
-const PAUSE = "PAUSE";
+const LENGTH_C = 26;
 
 const INTERVAL_TIME = 2000;
 
@@ -49,37 +46,24 @@ const initializeLoop = (
   setVisitedPos(new Set<string>([knotsPos()[KNOT_COUNT - 1].str]));
 };
 
-const parseMotion = (motion: string) => {
-  return motion.split(" ").map((x, i) => {
-    if (i === 1) {
-      return parseInt(x, 10);
-    } else {
-      return x;
-    }
-  });
-};
-
 const move = (
   location: Location,
-  loop: Accessor<boolean>,
-  setMoveIsDone: Setter<boolean>,
   moveIntervalId: number,
   tailsIntervalId: number,
   visitedPos: Accessor<Set<string>>,
   setVisitedPos: Setter<Set<string>>,
   knotsPos: Accessor<Knot[]>,
   setKnotsPos: Setter<Knot[]>,
-  motion: string
+  motion: [string, number]
 ) => {
-  const [dir, dist]: [string, number] = parseMotion(motion) as [string, number];
+  const [dir, dist] = motion;
 
   let i = 0;
   moveIntervalId = setInterval(() => {
     if (location.pathname !== "/day/09") {
       window.clearInterval(moveIntervalId);
     }
-    setMoveIsDone(false);
-    if (loop() && i++ < dist) {
+    if (i++ < dist) {
       const newHeadPos = { ...knotsPos()[0] };
       switch (dir) {
         case MOVE_RIGHT:
@@ -136,8 +120,7 @@ const move = (
           window.clearInterval(tailsIntervalId);
         }
       }, 0);
-    } else if (loop()) {
-      setMoveIsDone(true);
+    } else {
       window.clearInterval(moveIntervalId);
     }
   }, INTERVAL_TIME / dist);
@@ -164,35 +147,40 @@ const checkKnotIsInRopeSpot = (
 const Day09: Component = () => {
   const location = useLocation() as unknown as Location;
 
-  let motions: string[];
+  let motions: [string, number][];
   let motionsIdx = 0;
 
-  const rope = new Array(RIGHT_R + 1)
+  const rope = new Array(LENGTH_R)
     .fill(0)
-    .map(() => new Array(RIGHT_C + 1).fill(EMPTY));
+    .map(() => new Array(LENGTH_C).fill(EMPTY));
   const [knotsPos, setKnotsPos] = createSignal<Knot[]>();
   const [visitedPos, setVisitedPos] = createSignal<Set<string>>();
 
-  const [loop, setLoop] = createSignal<boolean>(false);
-  const [moveIsDone, setMoveIsDone] = createSignal<boolean>(true);
-  let intervalId: number;
+  const [run, setRun] = createSignal<boolean>(false);
+  let mainIntervalId: number;
   let moveIntervalId: number;
   let tailsIntervalId: number;
 
   onMount(async () => {
     const response = await fetch(inputFile);
     const inputText = await response.text();
-    motions = inputText.split("\n");
+    motions = inputText.split("\n").reduce((acc, m) => {
+      const mArrStr = m.split(" ");
+      const mArrStrNum = [mArrStr[0], parseInt(mArrStr[1], 10)] as [
+        string,
+        number
+      ];
+      acc.push(mArrStrNum);
+      return acc;
+    }, []);
     initializeLoop(knotsPos, setKnotsPos, setVisitedPos);
   });
 
   createEffect(() => {
-    if (moveIsDone() && loop()) {
+    if (run()) {
       if (motionsIdx < motions.length) {
         move(
           location,
-          loop,
-          setMoveIsDone,
           moveIntervalId,
           tailsIntervalId,
           visitedPos,
@@ -202,15 +190,13 @@ const Day09: Component = () => {
           motions[motionsIdx++]
         );
       }
-      intervalId = setInterval(() => {
+      mainIntervalId = setInterval(() => {
         if (location.pathname !== "/day/09") {
-          window.clearInterval(intervalId);
+          window.clearInterval(mainIntervalId);
         }
         if (motionsIdx < motions.length) {
           move(
             location,
-            loop,
-            setMoveIsDone,
             moveIntervalId,
             tailsIntervalId,
             visitedPos,
@@ -222,12 +208,13 @@ const Day09: Component = () => {
         } else {
           initializeLoop(knotsPos, setKnotsPos, setVisitedPos);
           motionsIdx = 0;
+          setRun(false);
         }
       }, INTERVAL_TIME);
     }
 
     onCleanup(() => {
-      clearInterval(intervalId);
+      clearInterval(mainIntervalId);
       clearInterval(moveIntervalId);
       clearInterval(tailsIntervalId);
     });
@@ -241,10 +228,11 @@ const Day09: Component = () => {
       <div class="flex items-center justify-center gap-6">
         <h2 class="font-bold">Part Two</h2>
         <button
-          class="rounded bg-gray-300 py-2 px-4 font-bold text-gray-800 hover:bg-gray-400"
-          onClick={() => setLoop(!loop())}
+          class="rounded bg-gray-300 py-2 px-4 font-bold text-gray-800 hover:bg-gray-400 disabled:opacity-25 disabled:hover:bg-gray-300"
+          onClick={() => setRun(!run())}
+          disabled={run()}
         >
-          {loop() ? PAUSE : START}
+          START
         </button>
       </div>
       <div class="flex w-fit items-center justify-center bg-gray-900 p-10 text-base md:text-2xl lg:text-3xl">
